@@ -5,7 +5,9 @@ import com.example.apiusers.dto.response.UserResponse;
 import com.example.apiusers.entity.User;
 import com.example.apiusers.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -34,23 +36,23 @@ public class UserService {
     }
 
     public Mono<UserResponse> create(UserRequest userRequest) {
-        String newId = UUID.randomUUID().toString();
-        Mono<User> userCreated = repository.save(User.builder()
-                .id(newId)
-                .firstName(userRequest.firstName())
-                .lastName(userRequest.lastName())
-                .username(userRequest.username())
-                .password(userRequest.password())
-                .isAdmin(false)
-                .isActive(true)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build());
-
-        return Mono.defer(() -> {
-                    return userCreated.map(UserService::userResponseCreate);
-                })
-                .subscribeOn(Schedulers.boundedElastic());
+        return repository.findUserByUsername(userRequest.username())
+                .subscribeOn(Schedulers.boundedElastic())
+                .thenEmpty(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.")))
+                .then(Mono.defer(() -> {
+                    return repository.save(User.builder()
+                            .id(UUID.randomUUID().toString())
+                            .firstName(userRequest.firstName())
+                            .lastName(userRequest.lastName())
+                            .username(userRequest.username())
+                            .password(userRequest.password())
+                            .isAdmin(false)
+                            .isActive(true)
+                            .createdAt(Instant.now())
+                            .updatedAt(Instant.now())
+                            .build())
+                            .map(UserService::userResponseCreate);
+                }));
     }
 
     public Mono<UserResponse> getInfoUser(String id) {
