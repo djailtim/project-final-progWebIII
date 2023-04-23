@@ -1,6 +1,7 @@
 package com.example.apiusers.controller;
 
 import com.example.apiusers.dto.request.UserRequest;
+import com.example.apiusers.dto.request.UserRequestUpdate;
 import com.example.apiusers.dto.response.UserResponse;
 import com.example.apiusers.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -27,5 +28,10 @@ public class UserController {
     @GetMapping("/{id}")
     public Mono<UserResponse> getInfoUser(@PathVariable String id) {
         return userService.getInfoUser(id);
+    }
+
+    @PutMapping("/{id}")
+    public Mono<UserResponse> updateUser(@PathVariable String id, @RequestBody UserRequestUpdate userRequestUpdate){
+        return userService.update(id, userRequestUpdate);
     }
 }
