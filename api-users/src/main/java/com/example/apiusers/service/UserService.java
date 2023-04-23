@@ -4,6 +4,7 @@ import com.example.apiusers.dto.UserMapper;
 import com.example.apiusers.dto.request.UserRequest;
 import com.example.apiusers.dto.request.UserRequestUpdate;
 import com.example.apiusers.dto.response.UserResponse;
+import com.example.apiusers.entity.User;
 import com.example.apiusers.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -50,5 +51,14 @@ public class UserService {
                             .flatMap(user -> repository.save(userMapper.mapUserWithUserRequestUpdateData(user, userRequestUpdate)))
                             .map(userMapper::mapToUserResponse);
                 }));
+    }
+
+    public Mono<Void> setAdminUser(String id) {
+        return repository.findById(id)
+                .flatMap(user -> {
+                    user.setAdmin(true);
+                    return repository.save(user);
+                })
+                .then();
     }
 }

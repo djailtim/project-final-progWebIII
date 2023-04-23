@@ -34,4 +34,10 @@ public class UserController {
     public Mono<UserResponse> updateUser(@PathVariable String id, @RequestBody UserRequestUpdate userRequestUpdate){
         return userService.update(id, userRequestUpdate);
     }
+
+    @PatchMapping("/{id}/set-admin")
+    public Mono<Void> setAdminUser(@PathVariable String id) {
+        return userService.setAdminUser(id);
+    }
+
 }
