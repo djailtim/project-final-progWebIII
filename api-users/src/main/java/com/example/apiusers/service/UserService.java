@@ -18,8 +18,19 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository repository;
 
-    public Flux<User> getAll() {
-        return this.repository.findAll();
+    private static UserResponse userResponseCreate(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .username(user.getUsername())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    public Flux<UserResponse> getAll() {
+        return this.repository.findAll()
+                .map(UserService::userResponseCreate);
     }
 
     public Mono<UserResponse> create(UserRequest userRequest) {
@@ -37,16 +48,13 @@ public class UserService {
                 .build());
 
         return Mono.defer(() -> {
-                    return userCreated.map(user -> {
-                        return UserResponse.builder()
-                                .id(user.getId())
-                                .firstName(user.getFirstName())
-                                .lastName(user.getLastName())
-                                .username(user.getUsername())
-                                .createdAt(user.getCreatedAt())
-                                .build();
-                    });
+                    return userCreated.map(UserService::userResponseCreate);
                 })
                 .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    public Mono<UserResponse> getInfoUser(String id) {
+        return repository.findById(id)
+                .map(UserService::userResponseCreate);
     }
 }

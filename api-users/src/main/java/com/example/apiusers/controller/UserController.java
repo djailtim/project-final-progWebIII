@@ -16,20 +16,16 @@ public class UserController {
 
     @GetMapping
     public Flux<UserResponse> getAll() {
-        return userService.getAll()
-                .map(eachUser -> {
-                    return UserResponse.builder()
-                            .id(eachUser.getId())
-                            .firstName(eachUser.getFirstName())
-                            .lastName(eachUser.getLastName())
-                            .username(eachUser.getUsername())
-                            .createdAt(eachUser.getCreatedAt())
-                            .build();
-                });
+        return userService.getAll();
     }
 
     @PostMapping
     public Mono<UserResponse> create(@RequestBody UserRequest userRequest) {
         return userService.create(userRequest);
+    }
+
+    @GetMapping("/{id}")
+    public Mono<UserResponse> getInfoUser(@PathVariable String id) {
+        return userService.getInfoUser(id);
     }
 }
