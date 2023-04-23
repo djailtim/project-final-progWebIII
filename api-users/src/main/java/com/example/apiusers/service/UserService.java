@@ -61,4 +61,9 @@ public class UserService {
                 })
                 .then();
     }
+
+    public Mono<Void> delete(String id) {
+        return repository.findById(id)
+                .flatMap(repository::delete);
+    }
 }
