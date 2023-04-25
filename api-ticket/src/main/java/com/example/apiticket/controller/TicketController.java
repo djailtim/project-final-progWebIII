@@ -1,6 +1,7 @@
 package com.example.apiticket.controller;
 
 import com.example.apiticket.dto.request.TicketRequest;
+import com.example.apiticket.dto.request.TicketRequestUpdate;
 import com.example.apiticket.entity.Ticket;
 import com.example.apiticket.service.TicketService;
 import lombok.RequiredArgsConstructor;
@@ -22,5 +23,10 @@ public class TicketController {
     @PostMapping
     public Mono<Ticket> create(@RequestBody TicketRequest ticketRequest) {
         return ticketService.create(ticketRequest);
+    }
+
+    @PutMapping(value = "/{id}")
+    public Mono<Ticket> update(@PathVariable String id, @RequestBody TicketRequestUpdate ticketRequestUpdate) {
+        return ticketService.update(id, ticketRequestUpdate);
     }
 }
