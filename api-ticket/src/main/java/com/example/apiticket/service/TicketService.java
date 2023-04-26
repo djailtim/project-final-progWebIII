@@ -43,4 +43,14 @@ public class TicketService {
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
+
+    public Mono<Void> updateStatus(String id, String status) {
+        return repository.findById(id)
+                .flatMap(existingTicket -> {
+                    existingTicket.setStatus(StatusTicket.valueOf(status));
+                    return repository.save(existingTicket);
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
+    }
 }

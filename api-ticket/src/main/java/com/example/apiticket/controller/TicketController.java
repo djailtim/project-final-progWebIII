@@ -29,4 +29,9 @@ public class TicketController {
     public Mono<Ticket> update(@PathVariable String id, @RequestBody TicketRequestUpdate ticketRequestUpdate) {
         return ticketService.update(id, ticketRequestUpdate);
     }
+
+    @PatchMapping(value = "/{id}/{status}")
+    public Mono<Void> updateStatus(@PathVariable(value = "id") String id, @PathVariable(value = "status") String status ) {
+        return ticketService.updateStatus(id, status);
+    }
 }
