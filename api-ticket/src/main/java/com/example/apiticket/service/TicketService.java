@@ -53,4 +53,9 @@ public class TicketService {
                 .subscribeOn(Schedulers.boundedElastic())
                 .then();
     }
+
+    public Mono<Void> delete(String id) {
+        return repository.findById(id)
+                .flatMap(repository::delete);
+    }
 }
