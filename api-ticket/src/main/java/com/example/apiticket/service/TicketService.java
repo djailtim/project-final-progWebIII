@@ -8,7 +8,9 @@ import com.example.apiticket.entity.StatusTicket;
 import com.example.apiticket.entity.Ticket;
 import com.example.apiticket.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -35,18 +37,14 @@ public class TicketService {
                         return repository.save(ticketMapper.mapTicketWithTicketRequestData(ticketRequest))
                                 .subscribeOn(Schedulers.boundedElastic());
                     } else {
-                        return Mono.error(new RuntimeException("Requester user not found."));
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Requester user not found."));
                     }
                 });
-
-/*        return Mono.defer(() -> {
-            return repository.save(ticketMapper.mapTicketWithTicketRequestData(ticketRequest))
-                    .subscribeOn(Schedulers.boundedElastic());
-        });*/
     }
 
     public Mono<Ticket> update(String id, TicketRequestUpdate ticketRequestUpdate) {
         return repository.findById(id)
+                .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(existingTicket -> {
                     existingTicket.setTitle(ticketRequestUpdate.title() == null ? existingTicket.getTitle() : ticketRequestUpdate.title());
                     existingTicket.setDescription(ticketRequestUpdate.description() == null ? existingTicket.getDescription() : ticketRequestUpdate.description());
@@ -54,21 +52,24 @@ public class TicketService {
                     existingTicket.setUpdatedAt(Instant.now());
                     return repository.save(existingTicket);
                 })
-                .subscribeOn(Schedulers.boundedElastic());
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found.")));
     }
 
     public Mono<Void> updateStatus(String id, String status) {
         return repository.findById(id)
+                .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(existingTicket -> {
                     existingTicket.setStatus(StatusTicket.valueOf(status));
                     return repository.save(existingTicket);
                 })
-                .subscribeOn(Schedulers.boundedElastic())
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found.")))
                 .then();
     }
 
     public Mono<Void> delete(String id) {
         return repository.findById(id)
+                .subscribeOn(Schedulers.boundedElastic())
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found.")))
                 .flatMap(repository::delete);
     }
 }
