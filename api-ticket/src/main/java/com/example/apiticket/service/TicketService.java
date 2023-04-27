@@ -1,5 +1,6 @@
 package com.example.apiticket.service;
 
+import com.example.apiticket.client.UserClient;
 import com.example.apiticket.dto.TicketMapper;
 import com.example.apiticket.dto.request.TicketRequest;
 import com.example.apiticket.dto.request.TicketRequestUpdate;
@@ -19,6 +20,7 @@ import java.time.Instant;
 public class TicketService {
     private final TicketRepository repository;
     private final TicketMapper ticketMapper;
+    private final UserClient userClient;
 
     public Flux<Ticket> findAllTickets() {
         return repository.findAll()
@@ -26,10 +28,21 @@ public class TicketService {
     }
 
     public Mono<Ticket> create(TicketRequest ticketRequest) {
-        return Mono.defer(() -> {
+
+        return userClient.findById(ticketRequest.requesterId())
+                .flatMap(userExists -> {
+                    if(userExists) {
+                        return repository.save(ticketMapper.mapTicketWithTicketRequestData(ticketRequest))
+                                .subscribeOn(Schedulers.boundedElastic());
+                    } else {
+                        return Mono.error(new RuntimeException("Requester user not found."));
+                    }
+                });
+
+/*        return Mono.defer(() -> {
             return repository.save(ticketMapper.mapTicketWithTicketRequestData(ticketRequest))
                     .subscribeOn(Schedulers.boundedElastic());
-        });
+        });*/
     }
 
     public Mono<Ticket> update(String id, TicketRequestUpdate ticketRequestUpdate) {

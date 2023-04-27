@@ -14,6 +14,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -29,23 +31,22 @@ public class UserService {
     public Mono<UserResponse> create(UserRequest userRequest) {
         return repository.findUserByUsername(userRequest.username())
                 .subscribeOn(Schedulers.boundedElastic())
-                .thenEmpty(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.")))
-                .then(Mono.defer(() -> {
-                    return repository.save(userMapper.mapUserWithUserRequestData(userRequest))
-                            .map(userMapper::mapToUserResponse);
-                }));
+                .flatMap(userExists -> Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.")))
+                .switchIfEmpty(repository.save(userMapper.mapUserWithUserRequestData(userRequest)))
+                .map(user -> userMapper.mapToUserResponse((User) user));
     }
 
     public Mono<UserResponse> getInfoUser(String id) {
         return repository.findById(id)
                 .subscribeOn(Schedulers.boundedElastic())
-                .map(userMapper::mapToUserResponse);
+                .map(userMapper::mapToUserResponse)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found.")));
     }
 
     public Mono<UserResponse> update(String id, UserRequestUpdate userRequestUpdate) {
         return repository.findUserByUsername(userRequestUpdate.username())
                 .subscribeOn(Schedulers.boundedElastic())
-                .thenEmpty(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.")))
+                .flatMap(userExists -> Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists.")))
                 .then(Mono.defer(() -> {
                     return repository.findById(id)
                             .flatMap(user -> repository.save(userMapper.mapUserWithUserRequestUpdateData(user, userRequestUpdate)))
@@ -55,6 +56,7 @@ public class UserService {
 
     public Mono<Void> setAdminUser(String id) {
         return repository.findById(id)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found.")))
                 .flatMap(user -> {
                     user.setAdmin(true);
                     return repository.save(user);
@@ -64,6 +66,7 @@ public class UserService {
 
     public Mono<Void> delete(String id) {
         return repository.findById(id)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found.")))
                 .flatMap(repository::delete);
     }
 }
